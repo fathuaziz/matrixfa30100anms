@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -93,7 +94,6 @@
         let animationSpeed = 150;
         let animationInterval;
 
-        // Buat kotak-kotak LED di HTML
         for (let i = 0; i < numRelays; i++) {
             const led = document.createElement('div');
             led.classList.add('led');
@@ -101,8 +101,6 @@
             ledContainer.appendChild(led);
             relays.push(led);
         }
-
-        // --- Fungsi Kontrol Animasi (adaptasi dari kode Arduino) ---
 
         function turnAllRelays(state) {
             relays.forEach(led => {
@@ -129,31 +127,24 @@
                 animationFunction();
             }, animations[currentAnimation].speed);
             
-            // Perbarui nama animasi di UI
             currentAnimationNameSpan.textContent = animations[currentAnimation].name;
-            // Perbarui kecepatan animasi
             animationSpeed = animations[currentAnimation].speed;
         }
 
-        // --- Logika Animasi (adaptasi dari kode Arduino) ---
-
-        // Fungsi helper untuk menyalakan 3 LED dari kiri ke kanan
         function runThreeLeds(speed, reversed = false, onOff = false) {
             animationSpeed = speed;
             turnAllRelays('LOW');
 
             if (!reversed) {
-                // Kiri ke kanan
                 for (let i = 0; i < 3; i++) {
                     const pin = (animationStep + i) % numRelays;
                     relays[pin].classList.add('on');
                 }
                 animationStep++;
                 if (animationStep >= numRelays - 2) {
-                    animationStep = 0; // Ulangi dari awal
+                    animationStep = 0;
                 }
             } else {
-                // Kanan ke kiri
                 for (let i = 0; i < 3; i++) {
                     const pin = (numRelays - 1 - (animationStep + i));
                     if (pin >= 0 && pin < numRelays) {
@@ -162,18 +153,16 @@
                 }
                 animationStep++;
                 if (animationStep >= numRelays - 2) {
-                    animationStep = 0; // Ulangi dari awal
+                    animationStep = 0;
                 }
             }
         }
         
-        // Fungsi helper untuk pergerakan bolak-balik
         function runBolakBalik(speed) {
             animationSpeed = speed;
             turnAllRelays('LOW');
             
             if (!animationReversed) {
-                // Kiri ke kanan
                 for (let i = 0; i < 3; i++) {
                     const pin = animationStep + i;
                     if (pin < numRelays) {
@@ -186,7 +175,6 @@
                     animationStep = numRelays - 3;
                 }
             } else {
-                // Kanan ke kiri
                 for (let i = 0; i < 3; i++) {
                     const pin = animationStep + i;
                     if (pin < numRelays) {
@@ -201,9 +189,7 @@
             }
         }
 
-        // Objek berisi semua animasi yang sudah Anda buat
         const animations = [
-            // Animasi 1: LED berjalan dari kanan ke kiri dengan delay 50
             {
                 name: "Animasi 1: LED Kanan ke Kiri (50ms)",
                 speed: 50,
@@ -213,7 +199,6 @@
                     animationStep = (animationStep + 1) % numRelays;
                 }
             },
-            // Animasi 2: LED berjalan dari kanan ke kiri dengan delay 100
             {
                 name: "Animasi 2: LED Kanan ke Kiri (100ms)",
                 speed: 100,
@@ -223,7 +208,6 @@
                     animationStep = (animationStep + 1) % numRelays;
                 }
             },
-            // Animasi 3: LED berjalan dari kiri ke kanan dengan delay 50
             {
                 name: "Animasi 3: LED Kiri ke Kanan (50ms)",
                 speed: 50,
@@ -233,7 +217,6 @@
                     animationStep = (animationStep + 1) % numRelays;
                 }
             },
-            // Animasi 4: LED berjalan dari kiri ke kanan dengan delay 100
             {
                 name: "Animasi 4: LED Kiri ke Kanan (100ms)",
                 speed: 100,
@@ -243,8 +226,7 @@
                     animationStep = (animationStep + 1) % numRelays;
                 }
             },
-             // Animasi 5: LED berjalan dari kiri ke kanan bolak-balik dengan delay 50
-            {
+              {
                 name: "Animasi 5: LED Bolak-balik (50ms)",
                 speed: 50,
                 func: () => {
@@ -266,8 +248,7 @@
                     }
                 }
             },
-             // Animasi 6: LED berjalan dari kiri ke kanan bolak-balik dengan delay 100
-            {
+              {
                 name: "Animasi 6: LED Bolak-balik (100ms)",
                 speed: 100,
                 func: () => {
@@ -289,8 +270,7 @@
                     }
                 }
             },
-             // Animasi 7: LED menyala dari tengah ke samping dengan delay 50
-            {
+              {
                 name: "Animasi 7: Tengah ke Samping (50ms)",
                 speed: 50,
                 func: () => {
@@ -304,8 +284,7 @@
                     }
                 }
             },
-             // Animasi 8: LED menyala dari tengah ke samping dengan delay 100
-            {
+              {
                 name: "Animasi 8: Tengah ke Samping (100ms)",
                 speed: 100,
                 func: () => {
@@ -319,7 +298,6 @@
                     }
                 }
             },
-            // Animasi 9: LED menyala dari samping ke tengah dengan delay 50
             {
                 name: "Animasi 9: Samping ke Tengah (50ms)",
                 speed: 50,
@@ -334,7 +312,6 @@
                     }
                 }
             },
-            // Animasi 10: LED menyala dari samping ke tengah dengan delay 100
             {
                 name: "Animasi 10: Samping ke Tengah (100ms)",
                 speed: 100,
@@ -349,7 +326,6 @@
                     }
                 }
             },
-            // Animasi 11: LED nyala semua, lalu mati, lalu menyala lagi
             {
                 name: "Animasi 11: Nyala Mati Cepat (50ms)",
                 speed: 50,
@@ -363,7 +339,6 @@
                     }
                 }
             },
-            // Animasi 12: LED menyala dari samping ke tengah lalu balik lagi ke samping dengan delay 50
             {
                 name: "Animasi 12: Samping-Tengah Bolak-balik (50ms)",
                 speed: 50,
@@ -388,7 +363,6 @@
                     }
                 }
             },
-            // Animasi 13: LED menyala dari samping ke tengah lalu balik lagi ke samping dengan delay 100
             {
                 name: "Animasi 13: Samping-Tengah Bolak-balik (100ms)",
                 speed: 100,
@@ -413,7 +387,6 @@
                     }
                 }
             },
-            // Animasi 14: LED dari tengah berjalan ke kiri lalu ke kanan dan kembali ke tengah dengan delay 50
             {
                 name: "Animasi 14: Tengah Kiri-Kanan (50ms)",
                 speed: 50,
@@ -436,7 +409,6 @@
                     }
                 }
             },
-            // Animasi 15: LED dari tengah berjalan ke kiri lalu ke kanan dan kembali ke tengah dengan delay 150
             {
                 name: "Animasi 15: Tengah Kiri-Kanan (150ms)",
                 speed: 150,
@@ -459,7 +431,6 @@
                     }
                 }
             },
-            // Animasi 16: LED 0-4 berkedip 3x lalu LED 5-9 berkedip 3x dengan delay 50
             {
                 name: "Animasi 16: Kiri-Kanan Kedip (50ms)",
                 speed: 50,
@@ -484,7 +455,6 @@
                     }
                 }
             },
-            // Animasi 17: LED 0-4 berkedip 3x lalu LED 5-9 berkedip 3x dengan delay 100
             {
                 name: "Animasi 17: Kiri-Kanan Kedip (100ms)",
                 speed: 100,
@@ -509,7 +479,6 @@
                     }
                 }
             },
-            // Animasi 18: 5 LED berkedip kanan 2x lalu kiri 2x sebanyak 3x dengan kedip delay 50 lalu jeda delay 200
             {
                 name: "Animasi 18: Kanan-Kiri 3x (50ms)",
                 speed: 50,
@@ -536,7 +505,6 @@
                     }
                 }
             },
-            // Animasi 19: 5 LED berkedip kanan 2x lalu kiri 2x sebanyak 3x dengan kedip delay 100 lalu jeda delay 200
             {
                 name: "Animasi 19: Kanan-Kiri 3x (100ms)",
                 speed: 100,
@@ -563,7 +531,6 @@
                     }
                 }
             },
-            // Animasi 20: 4 LED tengah berkedip 3x lalu 3 LED pinggir kedip 3x
             {
                 name: "Animasi 20: Tengah-Pinggir Kedip (100ms)",
                 speed: 100,
@@ -592,7 +559,6 @@
                     }
                 }
             },
-            // Animasi 21: LED berkedip menyala dari samping ke tengah
             {
                 name: "Animasi 21: Samping ke Tengah Kedip (100ms)",
                 speed: 100,
@@ -607,7 +573,6 @@
                     }
                 }
             },
-            // Animasi 22: Kedip cepat
             {
                 name: "Animasi 22: Kedip Cepat (50ms)",
                 speed: 50,
@@ -621,7 +586,6 @@
                     }
                 }
             },
-            // Animasi 23: LED 9 ke 5 berkedip, kembali biasa. LED 0 ke 4 berkedip, kembali biasa.
             {
                 name: "Animasi 23: Kedip-Nyala Bergantian",
                 speed: 150,
@@ -645,7 +609,6 @@
                     animationStep++;
                 }
             },
-            // Animasi 24: 3 LED berjalan dari kanan ke kiri (termodifikasi)
             {
                 name: "Animasi 24: 3 LED Kanan ke Kiri",
                 speed: 50,
@@ -669,7 +632,6 @@
                     }
                 }
             },
-            // Animasi 25: 3 LED berjalan dari kiri ke kanan lalu kanan ke kiri
             {
                 name: "Animasi 25: 3 LED Bolak-balik (50ms)",
                 speed: 50,
@@ -677,7 +639,6 @@
                     runBolakBalik(50);
                 }
             },
-            // Animasi 26: 3 LED berjalan dari kiri ke kanan
             {
                 name: "Animasi 26: 3 LED Kiri ke Kanan",
                 speed: 50,
@@ -685,7 +646,6 @@
                     runThreeLeds(50);
                 }
             },
-            // Animasi 27: 3 LED berjalan dari kiri ke kanan dengan delay 130
             {
                 name: "Animasi 27: 3 LED Kiri ke Kanan (130ms)",
                 speed: 130,
@@ -693,7 +653,6 @@
                     runThreeLeds(130);
                 }
             },
-            // Animasi 28: 3 LED berjalan dari kanan ke kiri dengan delay 130
             {
                 name: "Animasi 28: 3 LED Kanan ke Kiri (130ms)",
                 speed: 130,
@@ -701,15 +660,13 @@
                     runThreeLeds(130, true);
                 }
             },
-             // Animasi 29: 3 LED berjalan dari kiri ke kanan lalu kanan ke kiri dengan delay 130
-            {
+              {
                 name: "Animasi 29: 3 LED Bolak-balik (130ms)",
                 speed: 130,
                 func: () => {
                     runBolakBalik(130);
                 }
             },
-            // Animasi 30: Semua LED kedip cepat ke lambat lalu lambat ke cepat
             {
                 name: "Animasi 30: Kedip Cepat-Lambat",
                 speed: 150,
@@ -753,9 +710,6 @@
             },
         ];
 
-        // --- Event Listeners untuk Tombol dan Dropdown ---
-
-        // Isi dropdown dengan nama-nama animasi
         animations.forEach((anim, index) => {
             const option = document.createElement('option');
             option.value = index;
@@ -763,27 +717,23 @@
             animationSelector.appendChild(option);
         });
 
-        // Event listener untuk tombol "Next"
         nextBtn.addEventListener('click', () => {
             currentAnimation = (currentAnimation + 1) % animations.length;
             animationSelector.value = currentAnimation;
             resetAnimationState();
         });
 
-        // Event listener untuk tombol "Previous"
         prevBtn.addEventListener('click', () => {
             currentAnimation = (currentAnimation - 1 + animations.length) % animations.length;
             animationSelector.value = currentAnimation;
             resetAnimationState();
         });
 
-        // Event listener untuk dropdown
         animationSelector.addEventListener('change', (event) => {
             currentAnimation = parseInt(event.target.value);
             resetAnimationState();
         });
 
-        // Jalankan animasi pertama saat halaman dimuat
         resetAnimationState();
     </script>
 </body>
