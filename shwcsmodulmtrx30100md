@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Animasi LED</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #222;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4CAF50;
+        }
+
+        #led-container {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .led {
+            width: 50px;
+            height: 50px;
+            background-color: #444;
+            border-radius: 5px;
+            transition: background-color 0.1s ease-in-out;
+            border: 2px solid #555;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .led.on {
+            background-color: #ff5722;
+            border-color: #ff5722;
+            box-shadow: 0 0 10px #ff5722, inset 0 0 15px #ff5722;
+        }
+
+        #controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            align-items: center;
+        }
+
+        button, select {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            background-color: #007bff;
+            transition: background-color 0.2s;
+        }
+
+        button:hover, select:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simulasi Animasi LED</h1>
+    <div id="led-container"></div>
+    <div id="controls">
+        <button id="prevBtn">Previous</button>
+        <select id="animationSelector"></select>
+        <button id="nextBtn">Next</button>
+    </div>
+    <p>Animasi Saat Ini: <span id="currentAnimationName"></span></p>
+
+    <script>
+        const numRelays = 10;
+        const ledContainer = document.getElementById('led-container');
+        const animationSelector = document.getElementById('animationSelector');
+        const currentAnimationNameSpan = document.getElementById('currentAnimationName');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        let relays = [];
+        let currentAnimation = 0;
+        let animationStep = 0;
+        let animationReversed = false;
+        let animationSpeed = 150;
+        let animationInterval;
+
+        // Buat kotak-kotak LED di HTML
+        for (let i = 0; i < numRelays; i++) {
+            const led = document.createElement('div');
+            led.classList.add('led');
+            led.dataset.pin = i;
+            ledContainer.appendChild(led);
+            relays.push(led);
+        }
+
+        // --- Fungsi Kontrol Animasi (adaptasi dari kode Arduino) ---
+
+        function turnAllRelays(state) {
+            relays.forEach(led => {
+                if (state === 'HIGH') {
+                    led.classList.add('on');
+                } else {
+                    led.classList.remove('on');
+                }
+            });
+        }
+
+        function resetAnimationState() {
+            animationStep = 0;
+            animationReversed = false;
+            turnAllRelays('LOW');
+            clearInterval(animationInterval);
+            runAnimation();
+        }
+
+        function runAnimation() {
+            clearInterval(animationInterval);
+            const animationFunction = animations[currentAnimation].func;
+            animationInterval = setInterval(() => {
+                animationFunction();
+            }, animations[currentAnimation].speed);
+            
+            // Perbarui nama animasi di UI
+            currentAnimationNameSpan.textContent = animations[currentAnimation].name;
+            // Perbarui kecepatan animasi
+            animationSpeed = animations[currentAnimation].speed;
+        }
+
+        // --- Logika Animasi (adaptasi dari kode Arduino) ---
+
+        // Fungsi helper untuk menyalakan 3 LED dari kiri ke kanan
+        function runThreeLeds(speed, reversed = false, onOff = false) {
+            animationSpeed = speed;
+            turnAllRelays('LOW');
+
+            if (!reversed) {
+                // Kiri ke kanan
+                for (let i = 0; i < 3; i++) {
+                    const pin = (animationStep + i) % numRelays;
+                    relays[pin].classList.add('on');
+                }
+                animationStep++;
+                if (animationStep >= numRelays - 2) {
+                    animationStep = 0; // Ulangi dari awal
+                }
+            } else {
+                // Kanan ke kiri
+                for (let i = 0; i < 3; i++) {
+                    const pin = (numRelays - 1 - (animationStep + i));
+                    if (pin >= 0 && pin < numRelays) {
+                         relays[pin].classList.add('on');
+                    }
+                }
+                animationStep++;
+                if (animationStep >= numRelays - 2) {
+                    animationStep = 0; // Ulangi dari awal
+                }
+            }
+        }
+        
+        // Fungsi helper untuk pergerakan bolak-balik
+        function runBolakBalik(speed) {
+            animationSpeed = speed;
+            turnAllRelays('LOW');
+            
+            if (!animationReversed) {
+                // Kiri ke kanan
+                for (let i = 0; i < 3; i++) {
+                    const pin = animationStep + i;
+                    if (pin < numRelays) {
+                        relays[pin].classList.add('on');
+                    }
+                }
+                animationStep++;
+                if (animationStep >= numRelays - 2) {
+                    animationReversed = true;
+                    animationStep = numRelays - 3;
+                }
+            } else {
+                // Kanan ke kiri
+                for (let i = 0; i < 3; i++) {
+                    const pin = animationStep + i;
+                    if (pin < numRelays) {
+                        relays[pin].classList.add('on');
+                    }
+                }
+                animationStep--;
+                if (animationStep < 0) {
+                    animationReversed = false;
+                    animationStep = 1;
+                }
+            }
+        }
+
+        // Objek berisi semua animasi yang sudah Anda buat
+        const animations = [
+            // Animasi 1: LED berjalan dari kanan ke kiri dengan delay 50
+            {
+                name: "Animasi 1: LED Kanan ke Kiri (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    relays[(numRelays - 1) - animationStep].classList.add('on');
+                    animationStep = (animationStep + 1) % numRelays;
+                }
+            },
+            // Animasi 2: LED berjalan dari kanan ke kiri dengan delay 100
+            {
+                name: "Animasi 2: LED Kanan ke Kiri (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    relays[(numRelays - 1) - animationStep].classList.add('on');
+                    animationStep = (animationStep + 1) % numRelays;
+                }
+            },
+            // Animasi 3: LED berjalan dari kiri ke kanan dengan delay 50
+            {
+                name: "Animasi 3: LED Kiri ke Kanan (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    relays[animationStep].classList.add('on');
+                    animationStep = (animationStep + 1) % numRelays;
+                }
+            },
+            // Animasi 4: LED berjalan dari kiri ke kanan dengan delay 100
+            {
+                name: "Animasi 4: LED Kiri ke Kanan (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    relays[animationStep].classList.add('on');
+                    animationStep = (animationStep + 1) % numRelays;
+                }
+            },
+             // Animasi 5: LED berjalan dari kiri ke kanan bolak-balik dengan delay 50
+            {
+                name: "Animasi 5: LED Bolak-balik (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (!animationReversed) {
+                        relays[animationStep].classList.add('on');
+                        animationStep++;
+                        if (animationStep >= numRelays) {
+                            animationStep = numRelays - 2;
+                            animationReversed = true;
+                        }
+                    } else {
+                        relays[animationStep].classList.add('on');
+                        animationStep--;
+                        if (animationStep < 0) {
+                            animationStep = 1;
+                            animationReversed = false;
+                        }
+                    }
+                }
+            },
+             // Animasi 6: LED berjalan dari kiri ke kanan bolak-balik dengan delay 100
+            {
+                name: "Animasi 6: LED Bolak-balik (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (!animationReversed) {
+                        relays[animationStep].classList.add('on');
+                        animationStep++;
+                        if (animationStep >= numRelays) {
+                            animationStep = numRelays - 2;
+                            animationReversed = true;
+                        }
+                    } else {
+                        relays[animationStep].classList.add('on');
+                        animationStep--;
+                        if (animationStep < 0) {
+                            animationStep = 1;
+                            animationReversed = false;
+                        }
+                    }
+                }
+            },
+             // Animasi 7: LED menyala dari tengah ke samping dengan delay 50
+            {
+                name: "Animasi 7: Tengah ke Samping (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < numRelays / 2) {
+                        relays[numRelays / 2 - 1 - animationStep].classList.add('on');
+                        relays[numRelays / 2 + animationStep].classList.add('on');
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+             // Animasi 8: LED menyala dari tengah ke samping dengan delay 100
+            {
+                name: "Animasi 8: Tengah ke Samping (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < numRelays / 2) {
+                        relays[numRelays / 2 - 1 - animationStep].classList.add('on');
+                        relays[numRelays / 2 + animationStep].classList.add('on');
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 9: LED menyala dari samping ke tengah dengan delay 50
+            {
+                name: "Animasi 9: Samping ke Tengah (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < numRelays / 2) {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 10: LED menyala dari samping ke tengah dengan delay 100
+            {
+                name: "Animasi 10: Samping ke Tengah (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < numRelays / 2) {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 11: LED nyala semua, lalu mati, lalu menyala lagi
+            {
+                name: "Animasi 11: Nyala Mati Cepat (50ms)",
+                speed: 50,
+                func: () => {
+                    if (animationStep == 0) {
+                        turnAllRelays('HIGH');
+                        animationStep = 1;
+                    } else {
+                        turnAllRelays('LOW');
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 12: LED menyala dari samping ke tengah lalu balik lagi ke samping dengan delay 50
+            {
+                name: "Animasi 12: Samping-Tengah Bolak-balik (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (!animationReversed) {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep++;
+                        if (animationStep >= numRelays / 2) {
+                            animationReversed = true;
+                            animationStep = numRelays / 2 - 1;
+                        }
+                    } else {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep--;
+                        if (animationStep < 0) {
+                            animationReversed = false;
+                            animationStep = 0;
+                        }
+                    }
+                }
+            },
+            // Animasi 13: LED menyala dari samping ke tengah lalu balik lagi ke samping dengan delay 100
+            {
+                name: "Animasi 13: Samping-Tengah Bolak-balik (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (!animationReversed) {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep++;
+                        if (animationStep >= numRelays / 2) {
+                            animationReversed = true;
+                            animationStep = numRelays / 2 - 1;
+                        }
+                    } else {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep--;
+                        if (animationStep < 0) {
+                            animationReversed = false;
+                            animationStep = 0;
+                        }
+                    }
+                }
+            },
+            // Animasi 14: LED dari tengah berjalan ke kiri lalu ke kanan dan kembali ke tengah dengan delay 50
+            {
+                name: "Animasi 14: Tengah Kiri-Kanan (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    const middleLeft = numRelays / 2 - 1;
+                    const middleRight = numRelays / 2;
+                    if (animationStep < middleLeft) {
+                        relays[middleLeft - animationStep].classList.add('on');
+                    } else if (animationStep < middleLeft + numRelays) {
+                        const currentStep = animationStep - middleLeft;
+                        relays[numRelays - 1 - currentStep].classList.add('on');
+                    } else {
+                        const currentStep = animationStep - (middleLeft + numRelays);
+                        relays[middleRight + currentStep].classList.add('on');
+                    }
+                    animationStep++;
+                    if (animationStep >= (middleLeft + numRelays + middleRight)) {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 15: LED dari tengah berjalan ke kiri lalu ke kanan dan kembali ke tengah dengan delay 150
+            {
+                name: "Animasi 15: Tengah Kiri-Kanan (150ms)",
+                speed: 150,
+                func: () => {
+                    turnAllRelays('LOW');
+                    const middleLeft = numRelays / 2 - 1;
+                    const middleRight = numRelays / 2;
+                    if (animationStep < middleLeft) {
+                        relays[middleLeft - animationStep].classList.add('on');
+                    } else if (animationStep < middleLeft + numRelays) {
+                        const currentStep = animationStep - middleLeft;
+                        relays[numRelays - 1 - currentStep].classList.add('on');
+                    } else {
+                        const currentStep = animationStep - (middleLeft + numRelays);
+                        relays[middleRight + currentStep].classList.add('on');
+                    }
+                    animationStep++;
+                    if (animationStep >= (middleLeft + numRelays + middleRight)) {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 16: LED 0-4 berkedip 3x lalu LED 5-9 berkedip 3x dengan delay 50
+            {
+                name: "Animasi 16: Kiri-Kanan Kedip (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 6) {
+                        if (animationStep % 2 == 0) {
+                            for (let i = 0; i < 5; i++) {
+                                relays[i].classList.add('on');
+                            }
+                        }
+                    } else {
+                        if (animationStep % 2 == 0) {
+                            for (let i = 5; i < 10; i++) {
+                                relays[i].classList.add('on');
+                            }
+                        }
+                    }
+                    animationStep++;
+                    if (animationStep >= 12) {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 17: LED 0-4 berkedip 3x lalu LED 5-9 berkedip 3x dengan delay 100
+            {
+                name: "Animasi 17: Kiri-Kanan Kedip (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 6) {
+                        if (animationStep % 2 == 0) {
+                            for (let i = 0; i < 5; i++) {
+                                relays[i].classList.add('on');
+                            }
+                        }
+                    } else {
+                        if (animationStep % 2 == 0) {
+                            for (let i = 5; i < 10; i++) {
+                                relays[i].classList.add('on');
+                            }
+                        }
+                    }
+                    animationStep++;
+                    if (animationStep >= 12) {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 18: 5 LED berkedip kanan 2x lalu kiri 2x sebanyak 3x dengan kedip delay 50 lalu jeda delay 200
+            {
+                name: "Animasi 18: Kanan-Kiri 3x (50ms)",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 12) {
+                        let cycleStep = animationStep % 4;
+                        if (cycleStep < 2) {
+                            if (cycleStep == 0) {
+                                for (let i = 0; i < 5; i++) {
+                                    relays[i].classList.add('on');
+                                }
+                            }
+                        } else {
+                            if (cycleStep == 2) {
+                                for (let i = 5; i < 10; i++) {
+                                    relays[i].classList.add('on');
+                                }
+                            }
+                        }
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 19: 5 LED berkedip kanan 2x lalu kiri 2x sebanyak 3x dengan kedip delay 100 lalu jeda delay 200
+            {
+                name: "Animasi 19: Kanan-Kiri 3x (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 12) {
+                        let cycleStep = animationStep % 4;
+                        if (cycleStep < 2) {
+                            if (cycleStep == 0) {
+                                for (let i = 0; i < 5; i++) {
+                                    relays[i].classList.add('on');
+                                }
+                            }
+                        } else {
+                            if (cycleStep == 2) {
+                                for (let i = 5; i < 10; i++) {
+                                    relays[i].classList.add('on');
+                                }
+                            }
+                        }
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 20: 4 LED tengah berkedip 3x lalu 3 LED pinggir kedip 3x
+            {
+                name: "Animasi 20: Tengah-Pinggir Kedip (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 6) {
+                        if (animationStep % 2 == 0) {
+                            relays[3].classList.add('on');
+                            relays[4].classList.add('on');
+                            relays[5].classList.add('on');
+                            relays[6].classList.add('on');
+                        }
+                    } else {
+                        if (animationStep % 2 == 0) {
+                            relays[0].classList.add('on');
+                            relays[1].classList.add('on');
+                            relays[2].classList.add('on');
+                            relays[7].classList.add('on');
+                            relays[8].classList.add('on');
+                            relays[9].classList.add('on');
+                        }
+                    }
+                    animationStep++;
+                    if (animationStep >= 12) {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 21: LED berkedip menyala dari samping ke tengah
+            {
+                name: "Animasi 21: Samping ke Tengah Kedip (100ms)",
+                speed: 100,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < numRelays / 2) {
+                        relays[animationStep].classList.add('on');
+                        relays[numRelays - 1 - animationStep].classList.add('on');
+                        animationStep++;
+                    } else {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 22: Kedip cepat
+            {
+                name: "Animasi 22: Kedip Cepat (50ms)",
+                speed: 50,
+                func: () => {
+                    if (animationStep == 0) {
+                        turnAllRelays('HIGH');
+                        animationStep = 1;
+                    } else {
+                        turnAllRelays('LOW');
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 23: LED 9 ke 5 berkedip, kembali biasa. LED 0 ke 4 berkedip, kembali biasa.
+            {
+                name: "Animasi 23: Kedip-Nyala Bergantian",
+                speed: 150,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 10) {
+                        if (animationStep % 2 == 0) {
+                            relays[numRelays - 1 - (animationStep / 2)].classList.add('on');
+                        }
+                    } else if (animationStep < 18) {
+                        relays[numRelays - 5 + (animationStep - 10)].classList.add('on');
+                    } else if (animationStep < 28) {
+                        if ((animationStep - 18) % 2 == 0) {
+                            relays[(animationStep - 18) / 2].classList.add('on');
+                        }
+                    } else if (animationStep < 36) {
+                        relays[4 - (animationStep - 28)].classList.add('on');
+                    } else {
+                        animationStep = 0;
+                    }
+                    animationStep++;
+                }
+            },
+            // Animasi 24: 3 LED berjalan dari kanan ke kiri (termodifikasi)
+            {
+                name: "Animasi 24: 3 LED Kanan ke Kiri",
+                speed: 50,
+                func: () => {
+                    turnAllRelays('LOW');
+                    if (animationStep < 3) {
+                        for (let i = 0; i <= animationStep; i++) {
+                            relays[numRelays - 1 - i].classList.add('on');
+                        }
+                    } else {
+                        for (let i = 0; i < 3; i++) {
+                            const pin = (numRelays - 1 - (animationStep - 2)) - i;
+                            if (pin >= 0 && pin < numRelays) {
+                                relays[pin].classList.add('on');
+                            }
+                        }
+                    }
+                    animationStep++;
+                    if (animationStep >= numRelays + 2) {
+                        animationStep = 0;
+                    }
+                }
+            },
+            // Animasi 25: 3 LED berjalan dari kiri ke kanan lalu kanan ke kiri
+            {
+                name: "Animasi 25: 3 LED Bolak-balik (50ms)",
+                speed: 50,
+                func: () => {
+                    runBolakBalik(50);
+                }
+            },
+            // Animasi 26: 3 LED berjalan dari kiri ke kanan
+            {
+                name: "Animasi 26: 3 LED Kiri ke Kanan",
+                speed: 50,
+                func: () => {
+                    runThreeLeds(50);
+                }
+            },
+            // Animasi 27: 3 LED berjalan dari kiri ke kanan dengan delay 130
+            {
+                name: "Animasi 27: 3 LED Kiri ke Kanan (130ms)",
+                speed: 130,
+                func: () => {
+                    runThreeLeds(130);
+                }
+            },
+            // Animasi 28: 3 LED berjalan dari kanan ke kiri dengan delay 130
+            {
+                name: "Animasi 28: 3 LED Kanan ke Kiri (130ms)",
+                speed: 130,
+                func: () => {
+                    runThreeLeds(130, true);
+                }
+            },
+             // Animasi 29: 3 LED berjalan dari kiri ke kanan lalu kanan ke kiri dengan delay 130
+            {
+                name: "Animasi 29: 3 LED Bolak-balik (130ms)",
+                speed: 130,
+                func: () => {
+                    runBolakBalik(130);
+                }
+            },
+            // Animasi 30: Semua LED kedip cepat ke lambat lalu lambat ke cepat
+            {
+                name: "Animasi 30: Kedip Cepat-Lambat",
+                speed: 150,
+                func: () => {
+                    const minSpeed = 50;
+                    const maxSpeed = 300;
+                    const speedRange = maxSpeed - minSpeed;
+                    
+                    turnAllRelays('LOW');
+                    
+                    if (!animationReversed) {
+                        animationSpeed = minSpeed + (animationStep * (speedRange / numRelays));
+                        if (animationStep < numRelays) {
+                            turnAllRelays('HIGH');
+                        } else {
+                            turnAllRelays('LOW');
+                        }
+                        animationStep++;
+                        if (animationStep > numRelays * 2) {
+                            animationStep = 0;
+                            animationReversed = true;
+                        }
+                    } else {
+                        animationSpeed = maxSpeed - (animationStep * (speedRange / numRelays));
+                        if (animationStep < numRelays) {
+                            turnAllRelays('HIGH');
+                        } else {
+                            turnAllRelays('LOW');
+                        }
+                        animationStep++;
+                        if (animationStep > numRelays * 2) {
+                            animationStep = 0;
+                            animationReversed = false;
+                        }
+                    }
+                    clearInterval(animationInterval);
+                    animationInterval = setInterval(() => {
+                        animations[currentAnimation].func();
+                    }, animationSpeed);
+                }
+            },
+        ];
+
+        // --- Event Listeners untuk Tombol dan Dropdown ---
+
+        // Isi dropdown dengan nama-nama animasi
+        animations.forEach((anim, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = anim.name;
+            animationSelector.appendChild(option);
+        });
+
+        // Event listener untuk tombol "Next"
+        nextBtn.addEventListener('click', () => {
+            currentAnimation = (currentAnimation + 1) % animations.length;
+            animationSelector.value = currentAnimation;
+            resetAnimationState();
+        });
+
+        // Event listener untuk tombol "Previous"
+        prevBtn.addEventListener('click', () => {
+            currentAnimation = (currentAnimation - 1 + animations.length) % animations.length;
+            animationSelector.value = currentAnimation;
+            resetAnimationState();
+        });
+
+        // Event listener untuk dropdown
+        animationSelector.addEventListener('change', (event) => {
+            currentAnimation = parseInt(event.target.value);
+            resetAnimationState();
+        });
+
+        // Jalankan animasi pertama saat halaman dimuat
+        resetAnimationState();
+    </script>
+</body>
+</html>
